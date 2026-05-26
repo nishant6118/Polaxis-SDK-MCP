@@ -183,7 +183,7 @@ async def main() -> None:
                            "pii_ssn", guard)
     _row("send_email [pii]",     r, ms)
     r, ms = await evaluate("configure_integration",
-                           {"provider": "aws", "config": {"aws_secret": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"}},
+                           {"provider": "aws", "config": {"access_key": "AKIAIOSFODNN7EXAMPLE"}},
                            "aws_secret", guard)
     _row("configure_integration", r, ms)
 
