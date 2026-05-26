@@ -1,12 +1,10 @@
 {
-  "_comment": "Example MCP client config for the Polaxis governance proxy. Copy the polaxis-proxy block into your MCP client config file (e.g. Claude Desktop: ~/Library/Application Support/Claude/claude_desktop_config.json). Replace YOUR_API_KEY with the key from your Polaxis dashboard.",
+  "_comment": "Example MCP client config for the Polaxis governance proxy. Copy the polaxis block into your MCP client config file (e.g. Claude Desktop: ~/Library/Application Support/Claude/claude_desktop_config.json on Mac, %APPDATA%\\Claude\\claude_desktop_config.json on Windows). Replace YOUR_API_KEY with the key from your Polaxis dashboard.",
   "mcpServers": {
-    "polaxis-proxy": {
-      "command": "python",
-      "args": ["-m", "polaxis_mcp.server"],
+    "polaxis": {
+      "command": "polaxis-mcp",
       "env": {
-        "POLAXIS_API_KEY": "YOUR_API_KEY_HERE",
-        "POLAXIS_BASE_URL": "https://api.polaxis.io"
+        "POLAXIS_API_KEY": "YOUR_API_KEY_HERE"
       }
     }
   }

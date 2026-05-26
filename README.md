@@ -7,7 +7,7 @@ Polaxis sits between your AI agent and its tools, evaluating every tool call aga
 [![PyPI version](https://img.shields.io/pypi/v/polaxis)](https://pypi.org/project/polaxis/)
 [![Python](https://img.shields.io/pypi/pyversions/polaxis)](https://pypi.org/project/polaxis/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Tests](https://github.com/polaxis-io/polaxis-sdk/actions/workflows/tests.yml/badge.svg)](https://github.com/polaxis-io/polaxis-sdk/actions)
+[![Tests](https://github.com/nishant6118/Polaxis-SDK-MCP/actions/workflows/tests.yml/badge.svg)](https://github.com/nishant6118/Polaxis-SDK-MCP/actions)
 
 ---
 
@@ -288,9 +288,8 @@ Add the Polaxis governance proxy to your MCP client config:
 ```json
 {
   "mcpServers": {
-    "polaxis-proxy": {
-      "command": "python",
-      "args": ["-m", "polaxis_mcp.server"],
+    "polaxis": {
+      "command": "polaxis-mcp",
       "env": {
         "POLAXIS_API_KEY": "ag_prod_..."
       }
@@ -371,12 +370,10 @@ Policies are configured in the Polaxis dashboard (JSON format). Here are common 
 On Pro and Enterprise plans you can run the full Polaxis stack in your own infrastructure:
 
 ```bash
-# Clone the platform
-git clone https://github.com/polaxis-io/polaxis-sdk.git
-
-# Full Docker Compose stack
-docker compose up
+git clone https://github.com/nishant6118/Polaxis-SDK-MCP.git
 ```
+
+Contact [sales@polaxis.io](mailto:sales@polaxis.io) for a Docker Compose deployment guide and VPC setup instructions.
 
 Point the SDK at your instance:
 
@@ -406,7 +403,7 @@ Contributions are welcome! See [CONTRIBUTING.md](CONTRIBUTING.md) for:
 |---|---|
 | Documentation | [docs.polaxis.io](https://docs.polaxis.io) |
 | Dashboard | [polaxis.io](https://polaxis.io) |
-| GitHub Issues | [github.com/polaxis-io/polaxis-sdk/issues](https://github.com/polaxis-io/polaxis-sdk/issues) |
+| GitHub Issues | [github.com/nishant6118/Polaxis-SDK-MCP/issues](https://github.com/nishant6118/Polaxis-SDK-MCP/issues) |
 | Email | sdk@polaxis.io |
 
 ---
