@@ -17,7 +17,7 @@ from .exceptions import (
     FirewallBlockError,
     PolicyBlockError,
 )
-from .models import ApprovalStatus, EvaluateResult
+from .models import ApprovalStatus, EvaluateResult, OutputScanResult
 
 _DEFAULT_BASE_URL = "https://api.polaxis.io"
 _DEFAULT_TIMEOUT = 10.0  # seconds
@@ -177,6 +177,58 @@ class Polaxis:
 
         return result
 
+    # ── Output scanning ────────────────────────────────────────────────────────
+
+    async def scan_output(
+        self,
+        tool_name: str,
+        tool_output: object,
+        *,
+        session_id: str = "",
+    ) -> "OutputScanResult":
+        """Scan a tool's return value for threats before the agent ingests it.
+
+        Call this after every tool execution and check the result before using
+        the output in subsequent reasoning or tool calls.
+
+        Args:
+            tool_name:   Name of the tool that produced this output.
+            tool_output: The raw value returned by the tool (dict, list, str…).
+            session_id:  Session identifier — groups events in audit logs.
+
+        Returns:
+            :class:`OutputScanResult` describing whether the output is safe.
+
+        Example::
+
+            result = await guard.evaluate("web_search", {"query": q})
+            if result.allowed:
+                raw = await web_search(q)
+                scan = await guard.scan_output("web_search", raw)
+                if scan.safe:
+                    content = raw
+                elif scan.action == "redact":
+                    content = scan.sanitized_output   # PII stripped
+                else:
+                    raise RuntimeError(f"Tool output quarantined: {scan.threats}")
+        """
+        payload = {
+            "tool_name": tool_name,
+            "tool_output": tool_output,
+            "session_id": session_id,
+        }
+        async with httpx.AsyncClient(timeout=self._timeout) as client:
+            resp = await client.post(
+                f"{self._base_url}/api/evaluate/output",
+                json=payload,
+                headers=self._headers,
+            )
+        if resp.status_code == 401:
+            raise AuthenticationError("Invalid or expired API key.")
+        if not resp.is_success:
+            raise APIError(resp.status_code, resp.text)
+        return OutputScanResult._from_dict(tool_output, resp.json())
+
     # ── Human-in-the-loop helpers ──────────────────────────────────────────────
 
     async def get_approval_status(self, approval_id: str) -> ApprovalStatus:
@@ -284,6 +336,10 @@ class PolaxisSync:
     def evaluate(self, tool_name: str, tool_input: dict, **kwargs) -> EvaluateResult:
         """Synchronous version of :meth:`Polaxis.evaluate`."""
         return asyncio.run(self._async.evaluate(tool_name, tool_input, **kwargs))
+
+    def scan_output(self, tool_name: str, tool_output: object, **kwargs) -> "OutputScanResult":
+        """Synchronous version of :meth:`Polaxis.scan_output`."""
+        return asyncio.run(self._async.scan_output(tool_name, tool_output, **kwargs))
 
     def get_approval_status(self, approval_id: str) -> ApprovalStatus:
         """Synchronous version of :meth:`Polaxis.get_approval_status`."""

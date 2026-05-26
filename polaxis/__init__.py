@@ -1,6 +1,6 @@
 """Polaxis Python SDK — AI Agent Governance."""
 from .client import Polaxis, PolaxisSync
-from .models import ApprovalStatus, EvaluateResult
+from .models import ApprovalStatus, EvaluateResult, OutputScanResult
 from .exceptions import (
     PolaxisError,
     AuthenticationError,
@@ -18,6 +18,7 @@ __all__ = [
     "PolaxisSync",
     "EvaluateResult",
     "ApprovalStatus",
+    "OutputScanResult",
     "PolaxisError",
     "AuthenticationError",
     "PolicyBlockError",

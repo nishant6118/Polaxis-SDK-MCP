@@ -76,6 +76,45 @@ class EvaluateResult:
 
 
 @dataclass
+class OutputScanResult:
+    """Result of scanning a tool's output for threats.
+
+    Attributes:
+        safe:             True when output is clean and safe to use.
+        action:           ``"allow"`` | ``"quarantine"`` | ``"redact"`` | ``"flag"``
+        threats:          List of detected threats (dicts with type/subtype/severity).
+        sanitized_output: Cleaned output with PII/secrets replaced (redact only).
+        original_output:  The original unmodified output for reference.
+    """
+
+    safe: bool
+    action: str             # allow | quarantine | redact | flag
+    threats: list = field(default_factory=list)
+    sanitized_output: object = None
+    original_output: object = None
+
+    @property
+    def quarantined(self) -> bool:
+        """True when the output must not be used."""
+        return self.action == "quarantine"
+
+    @property
+    def redacted(self) -> bool:
+        """True when the output was cleaned — use sanitized_output instead."""
+        return self.action == "redact"
+
+    @classmethod
+    def _from_dict(cls, original: object, data: dict) -> "OutputScanResult":
+        return cls(
+            safe=bool(data.get("safe", True)),
+            action=data.get("action", "allow"),
+            threats=data.get("threats", []),
+            sanitized_output=data.get("sanitized_output"),
+            original_output=original,
+        )
+
+
+@dataclass
 class ApprovalStatus:
     """Current state of a human-in-the-loop approval request.
 
