@@ -6,7 +6,7 @@
 
 <h2>Polaxis Python SDK & MCP Server</h2>
 
-<p><i>Evaluate every tool call. Enforce policy. Approve what matters. All in under 5ms.</i></p>
+<p><i>AI agent security and LLM security at the execution layer — evaluate every tool call, enforce policy, approve what matters. All in under 5ms.</i></p>
 
 <br/>
 
@@ -27,7 +27,7 @@
 
 ## What does Polaxis do?
 
-Polaxis sits between your AI agent and its tools — evaluating every tool call against your policies in real time before it executes.
+Polaxis is the **AI agent security** and **LLM security** SDK for Python — it sits between your AI agent and its tools, evaluating every tool call against your policies in real time before it executes.
 
 ```
   Your AI agent
@@ -111,6 +111,8 @@ asyncio.run(send_invoice("cust_123", 499.00))
 ```
 
 Every call is now governed, logged, and auditable from your Polaxis dashboard.
+
+> **Why this matters for LLM security:** prompts are only half the problem. The real risk is what your agent *does* — the tools it calls, the data it touches, the money it moves. **Agent security** lives at execution time, not at the prompt layer.
 
 ---
 
