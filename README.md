@@ -6,7 +6,7 @@
 
 <h2>Polaxis Python SDK & MCP Server</h2>
 
-<p><i>AI agent security and LLM security at the execution layer — evaluate every tool call, enforce policy, approve what matters. All in under 5ms.</i></p>
+<p><i>AI agent security at the execution layer — evaluate every tool call, enforce policy, block threats. Sub-millisecond regex + LLM semantic eval. All before the tool runs.</i></p>
 
 <br/>
 
@@ -20,6 +20,7 @@
 [![Docs](https://img.shields.io/badge/📚_docs.polaxis.io-blue?style=flat-square)](https://docs.polaxis.io)
 [![Dashboard](https://img.shields.io/badge/🌐_polaxis.io-live-6366f1?style=flat-square)](https://polaxis.io)
 [![Free Tier](https://img.shields.io/badge/✅_free_tier-1_agent_·_10k_calls%2Fmo-22c55e?style=flat-square)](https://polaxis.io/register)
+[![Benchmark](https://img.shields.io/badge/📊_benchmark-99%25_injection_·_100%25_secrets-22c55e?style=flat-square)](https://polaxis.io/benchmark)
 
 </div>
 
@@ -34,21 +35,24 @@ Polaxis is the **AI agent security** and **LLM security** SDK for Python — it 
         │
         │  tool_call("delete_records", {"table": "users"})
         ▼
-┌──────────────────────────────────────────────────────────┐
-│                  Polaxis Policy Engine                   │
-│                                                          │
-│  ✦  Evaluate against your policy rules                  │
-│  ✦  Check agent spend budget (session / day / month)    │
-│  ✦  7-layer firewall scan (injection · PII · secrets)   │
-│  ✦  Route to human approver if required                 │
-│                                                          │
-│  Decision returned in < 5ms                              │
-└──────────────────────┬───────────────┬───────────────────┘
-                       │               │
-                    ALLOW           BLOCK / ESCALATE
-                       │               │
-               Your tools run    Human approves via
-             (database, API…)    Slack or dashboard
+┌──────────────────────────────────────────────────────────────┐
+│                   Polaxis Runtime Firewall                    │
+│                                                              │
+│  L1  Prompt injection scan     — 35+ regex patterns         │
+│  L2  PII detection             — SSN, CC, phone, email…     │
+│  L3  Secret / credential scan  — 25+ vendor key formats     │
+│  L4  Memory poisoning defense  — RAG / vector store attacks │
+│  L5  Authority claim blocking  — admin impersonation, sudo  │
+│  L6  Semantic LLM eval         — catches encoding & evasion │
+│  L7  Policy engine             — your rules + budget caps   │
+│                                                              │
+│  Decision returned in < 5ms (regex) or ~400ms (+ LLM)       │
+└──────────────────┬─────────────────────┬────────────────────┘
+                   │                     │
+                ALLOW              BLOCK / ESCALATE
+                   │                     │
+           Your tools run         Human approves via
+         (database, API…)         Slack or dashboard
 ```
 
 ### Three outcomes for every call
@@ -58,6 +62,52 @@ Polaxis is the **AI agent security** and **LLM security** SDK for Python — it 
 | `allow` | Within policy. Proceed. | Execute the tool |
 | `block` | Violates a rule or budget cap. | Abort — log the reason |
 | `escalate` | Human sign-off required. | Wait for approval via Slack or dashboard |
+
+---
+
+## Detection Accuracy
+
+> Measured on **459 real-world adversarial payloads** across 3 difficulty tiers:
+> **Easy** (direct English) · **Medium** (multi-language, obfuscated) · **Hard** (Base64, ROT13, Unicode homoglyphs, zero-width chars, social engineering)
+
+| Threat Category | Regex only (L1–L5) | + LLM eval (L6) | Combined |
+|---|:---:|:---:|:---:|
+| Prompt Injection | 28.3% | 99.0% | **99.0%** |
+| Credential / Secret | 56.7% | 100.0% | **100.0%** 🎯 |
+| PII Detection | 61.1% | 78.9% | **93.3%** |
+| Memory Poisoning | 50.0% | 93.3% | **97.8%** |
+| Authority Claims | 40.0% | 84.4% | **87.8%** |
+| **False positive rate** | **0.0%** | 8.0% | — |
+
+**Why regex alone isn't enough:** Hard-tier attacks — Base64-encoded injections, ROT13, zero-width characters, Unicode lookalikes, and multilingual injections — reduce regex detection to 10–26%. The LLM semantic eval layer (L6) catches these, pushing combined detection to **87–100%** across all categories.
+
+### Latency breakdown
+
+| Layer | p50 | p99 | Cost |
+|-------|-----|-----|------|
+| Regex (L1–L5) | **0.065 ms** | 0.177 ms | Free |
+| + LLM eval (L6, `gpt-4o-mini`) | ~400 ms | ~900 ms | ~$0.0001/call |
+
+Regex runs on every call. LLM is triggered only for configured high-risk tools or regex-flagged calls — keeping your average cost near zero.
+
+> [View full benchmark methodology →](https://polaxis.io/benchmark)
+
+---
+
+## OWASP Agentic AI Coverage
+
+Polaxis addresses the [OWASP Agentic AI Top Threats (ASI 2026)](https://owasp.org/www-project-top-10-for-large-language-model-applications/):
+
+| Threat | Polaxis Layer | Coverage |
+|--------|--------------|----------|
+| T1 — Memory Poisoning | L4 + L6 | ✅ RAG/vector injection, latent triggers |
+| T2 — Tool / Resource Abuse | L7 Policy Engine | ✅ Per-tool rules, rate limits |
+| T3 — Privilege Escalation | L5 + L7 | ✅ Authority claims, sudo detection |
+| T4 — Data Exfiltration | L2 (PII) + L3 (secrets) | ✅ Credential & PII blocking |
+| T5 — Prompt Injection | L1 + L6 | ✅ 35+ patterns + semantic eval |
+| T6 — Cascading Failures | L7 Budget + HITL | ✅ Spend caps, approval gates |
+| T7 — Deceptive Alignment | L6 Semantic | ✅ LLM-based intent analysis |
+| T15 — Human Manipulation | L5 + L6 | ✅ Authority impersonation, urgency attacks |
 
 ---
 
@@ -112,7 +162,7 @@ asyncio.run(send_invoice("cust_123", 499.00))
 
 Every call is now governed, logged, and auditable from your Polaxis dashboard.
 
-> **Why this matters for LLM security:** prompts are only half the problem. The real risk is what your agent *does* — the tools it calls, the data it touches, the money it moves. **Agent security** lives at execution time, not at the prompt layer.
+> **Why this matters for LLM security:** prompts are only half the problem. The real risk is what your agent *does* — the tools it calls, the data it touches, the money it moves. **Agent runtime security** lives at execution time, not the prompt layer. Regex catches obvious attacks in microseconds. The LLM layer catches the sophisticated ones — multi-language injections, encoded payloads, social engineering — that no regex can see.
 
 ---
 
@@ -139,7 +189,7 @@ Evaluate a proposed tool call. **Call this before every tool execution.**
 ```python
 result = await guard.evaluate(
     tool_name          = "send_email",
-    tool_input         = {"to": "alice@example.com", "subject": "Hello"},
+    tool_input         = {"to_user_id": "usr_alice", "subject": "Hello"},
     session_id         = "sess_abc",       # optional — groups calls in audit logs
     estimated_cost_usd = 0.002,            # optional — for budget tracking
 )
@@ -149,7 +199,7 @@ Returns [`EvaluateResult`](#evaluateresult).
 
 **Raises:**
 - `PolicyBlockError` — blocked by a policy rule
-- `FirewallBlockError` — blocked by the Agent Firewall (prompt injection, PII, secrets)
+- `FirewallBlockError` — blocked by the Agent Firewall (prompt injection, PII, secrets, memory poisoning, authority claim)
 - `BudgetExceededError` — agent's budget is exhausted
 - `AuthenticationError` — bad API key
 - `APIError` — unexpected HTTP error
@@ -190,7 +240,7 @@ if result.pending_approval:
 | `timeout_seconds` | `int` | How long to wait for approval |
 | `budget_remaining_usd` | `float` | Remaining daily budget |
 | `budget_warning` | `bool` | Budget is below 20% |
-| `threats` | `list` | Detected firewall threats (non-blocking) |
+| `threats` | `list` | Detected firewall threats (non-blocking when action is `flag`) |
 
 ---
 
@@ -407,7 +457,7 @@ Policies are configured in the [Polaxis dashboard](https://polaxis.io/dashboard)
 On Pro and Enterprise plans you can run the full Polaxis stack in your own infrastructure:
 
 ```bash
-git clone https://github.com/nishant6118/Polaxis.git
+git clone https://github.com/nishant6118/comply.git
 ```
 
 Point the SDK at your instance:
@@ -439,6 +489,7 @@ Contributions are welcome! See `CONTRIBUTING.md` for:
 |---------|------|
 | Documentation | [docs.polaxis.io](https://docs.polaxis.io) |
 | Dashboard | [polaxis.io](https://polaxis.io) |
+| Benchmark | [polaxis.io/benchmark](https://polaxis.io/benchmark) |
 | GitHub Issues | [github.com/nishant6118/Polaxis-SDK-MCP/issues](https://github.com/nishant6118/Polaxis-SDK-MCP/issues) |
 | Email | [sdk@polaxis.io](mailto:sdk@polaxis.io) |
 
@@ -452,14 +503,16 @@ MIT — see [LICENSE](LICENSE).
 
 <div align="center">
 
-**[🚀 Get started free](https://polaxis.io/register)** · **[📚 Full docs](https://docs.polaxis.io)** · **[💬 sales@polaxis.io](mailto:sales@polaxis.io)**
+**[🚀 Get started free](https://polaxis.io/register)** · **[📊 Benchmark](https://polaxis.io/benchmark)** · **[📚 Full docs](https://docs.polaxis.io)** · **[💬 sales@polaxis.io](mailto:sales@polaxis.io)**
 
 <br/>
 
-[![ai-agents](https://img.shields.io/badge/-ai--agents-1d4ed8?style=flat-square)](https://github.com/topics/ai-agents)
+[![ai-agent-security](https://img.shields.io/badge/-ai--agent--security-dc2626?style=flat-square)](https://github.com/topics/ai-agent-security)
 [![llm-security](https://img.shields.io/badge/-llm--security-dc2626?style=flat-square)](https://github.com/topics/llm-security)
 [![prompt-injection](https://img.shields.io/badge/-prompt--injection-b45309?style=flat-square)](https://github.com/topics/prompt-injection)
+[![agent-firewall](https://img.shields.io/badge/-agent--firewall-7c3aed?style=flat-square)](https://github.com/topics/agent-firewall)
 [![mcp](https://img.shields.io/badge/-mcp-7c3aed?style=flat-square)](https://github.com/topics/mcp)
+[![owasp](https://img.shields.io/badge/-owasp--agentic--ai-dc2626?style=flat-square)](https://github.com/topics/owasp)
 [![python](https://img.shields.io/badge/-python-3776ab?style=flat-square&logo=python&logoColor=white)](https://github.com/topics/python)
 
 </div>
