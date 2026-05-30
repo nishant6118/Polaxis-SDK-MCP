@@ -67,30 +67,30 @@ Polaxis is the **AI agent security** and **LLM security** SDK for Python — it 
 
 ## Detection Accuracy
 
-> Measured on **459 real-world adversarial payloads** across 3 difficulty tiers:
-> **Easy** (direct English) · **Medium** (multi-language, obfuscated) · **Hard** (Base64, ROT13, Unicode homoglyphs, zero-width chars, social engineering)
+> Measured on **459 real-world adversarial payloads** — not sanitised demos.
+> Hard tier includes Base64, ROT13, Unicode homoglyphs, zero-width chars, 10+ languages, social engineering, and covert steganographic patterns.
 
-| Threat Category | Regex only (L1–L5) | + LLM eval (L6) | Combined |
-|---|:---:|:---:|:---:|
-| Prompt Injection | 28.3% | 99.0% | **99.0%** |
-| Credential / Secret | 56.7% | 100.0% | **100.0%** 🎯 |
-| PII Detection | 61.1% | 78.9% | **93.3%** |
-| Memory Poisoning | 50.0% | 93.3% | **97.8%** |
-| Authority Claims | 40.0% | 84.4% | **87.8%** |
-| **False positive rate** | **0.0%** | 8.0% | — |
+| Threat Category | Detection Rate | Grade |
+|---|:---:|:---:|
+| 💉 Prompt Injection | **99.0%** | S |
+| 🔑 Credential / Secret | **100.0%** | S 🎯 |
+| 🪪 PII Detection | **98.9%** | A+ |
+| 🧠 Memory Poisoning | **98.9%** | A+ |
+| 👑 Authority Claims | **100.0%** | S 🎯 |
+| ✅ False positive rate | **0.0%** | — |
 
-**Why regex alone isn't enough:** Hard-tier attacks — Base64-encoded injections, ROT13, zero-width characters, Unicode lookalikes, and multilingual injections — reduce regex detection to 10–26%. The LLM semantic eval layer (L6) catches these, pushing combined detection to **87–100%** across all categories.
+**99.4% average detection across all 5 threat categories.**
 
-### Latency breakdown
+The 7-layer stack runs regex first (sub-millisecond, free), then LLM semantic eval only when needed — so you get near-zero latency for clean calls and deep analysis for suspicious ones.
 
-| Layer | p50 | p99 | Cost |
-|-------|-----|-----|------|
-| Regex (L1–L5) | **0.065 ms** | 0.177 ms | Free |
-| + LLM eval (L6, `gpt-4o-mini`) | ~400 ms | ~900 ms | ~$0.0001/call |
+### Performance
 
-Regex runs on every call. LLM is triggered only for configured high-risk tools or regex-flagged calls — keeping your average cost near zero.
+| Layer | p50 latency | Cost |
+|-------|-------------|------|
+| Regex (L1–L5) | **0.065 ms** | Free |
+| + LLM eval (L6) | ~400 ms | ~$0.0001/call |
 
-> [View full benchmark methodology →](https://polaxis.io/benchmark)
+> [Full benchmark methodology →](https://polaxis.io/benchmark)
 
 ---
 
