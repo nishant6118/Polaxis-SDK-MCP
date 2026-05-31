@@ -107,7 +107,7 @@ Polaxis addresses the [OWASP Agentic AI Top Threats (ASI 2026)](https://owasp.or
 | T5 — Prompt Injection | L1 + L6 | ✅ 35+ patterns + semantic eval |
 | T6 — Cascading Failures | L7 Budget + HITL | ✅ Spend caps, approval gates |
 | T7 — Deceptive Alignment | L6 Semantic | ✅ LLM-based intent analysis |
-| T15 — Human Manipulation | L5 + L6 | ✅ Authority impersonation, urgency attacks |
+| T8 — Human Manipulation | L5 + L6 | ✅ Authority impersonation, urgency attacks |
 
 ---
 
