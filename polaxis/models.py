@@ -42,6 +42,10 @@ class EvaluateResult:
     # Firewall
     threats: list = field(default_factory=list)
 
+    # Session call limit (AA04 — economic DoS protection)
+    session_call_count: Optional[int] = None   # current calls in this session
+    session_call_limit: Optional[int] = None   # hard cap (default 2000)
+
     @property
     def allowed(self) -> bool:
         """True when the call is permitted to proceed."""
@@ -72,6 +76,8 @@ class EvaluateResult:
             external_api_cost_usd=float(data.get("external_api_cost_usd", 0)),
             budget_warning=bool(data.get("budget_warning", False)),
             threats=data.get("threats", []),
+            session_call_count=data.get("session_call_count"),
+            session_call_limit=data.get("session_call_limit"),
         )
 
 

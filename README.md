@@ -20,7 +20,7 @@
 [![Docs](https://img.shields.io/badge/📚_docs.polaxis.io-blue?style=flat-square)](https://docs.polaxis.io)
 [![Dashboard](https://img.shields.io/badge/🌐_polaxis.io-live-6366f1?style=flat-square)](https://polaxis.io)
 [![Free Tier](https://img.shields.io/badge/✅_free_tier-1_agent_·_10k_calls%2Fmo-22c55e?style=flat-square)](https://polaxis.io/register)
-[![Benchmark](https://img.shields.io/badge/📊_benchmark-99%25_injection_·_100%25_secrets-22c55e?style=flat-square)](https://polaxis.io/benchmark)
+[![Benchmark](https://img.shields.io/badge/📊_benchmark-100%25_injection_·_100%25_secrets-22c55e?style=flat-square)](https://polaxis.io/benchmark)
 
 </div>
 
@@ -68,18 +68,18 @@ Polaxis is the **AI agent security** and **LLM security** SDK for Python — it 
 ## Detection Accuracy
 
 > Measured on **459 real-world adversarial payloads** — not sanitised demos.
-> Hard tier includes Base64, ROT13, Unicode homoglyphs, zero-width chars, 10+ languages, social engineering, and covert steganographic patterns.
+> Hard tier includes Base64, ROT13, Unicode homoglyphs, zero-width chars, NATO phonetic steganography, 10+ languages, social engineering, MINJA memory poisoning, EchoLeak indirect injection.
 
-| Threat Category | Detection Rate | Grade |
-|---|:---:|:---:|
-| 💉 Prompt Injection | **99.0%** | S |
-| 🔑 Credential / Secret | **100.0%** | S 🎯 |
-| 🪪 PII Detection | **98.9%** | A+ |
-| 🧠 Memory Poisoning | **98.9%** | A+ |
-| 👑 Authority Claims | **100.0%** | S 🎯 |
-| ✅ False positive rate | **0.0%** | — |
+| Threat Category | Detection Rate |
+|---|:---:|
+| 💉 Prompt Injection | **100.0%** |
+| 🔑 Credential / Secret | **100.0%** |
+| 🪪 PII Detection | **97.8%** |
+| 🧠 Memory Poisoning | **98.9%** |
+| 👑 Authority Claims | **100.0%** |
+| ✅ Regex false positive rate | **0.0%** |
 
-**99.4% average detection across all 5 threat categories.**
+**99.3% average detection across all 5 threat categories.**
 
 The 7-layer stack runs regex first (sub-millisecond, free), then LLM semantic eval only when needed — so you get near-zero latency for clean calls and deep analysis for suspicious ones.
 
@@ -87,8 +87,8 @@ The 7-layer stack runs regex first (sub-millisecond, free), then LLM semantic ev
 
 | Layer | p50 latency | Cost |
 |-------|-------------|------|
-| Regex (L1–L5) | **0.065 ms** | Free |
-| + LLM eval (L6) | ~400 ms | ~$0.0001/call |
+| Regex (L1–L5) | **0.258 ms** | Free |
+| + LLM eval (L6) | ~3.3 s | ~$0.00044/call |
 
 > [Full benchmark methodology →](https://polaxis.io/benchmark)
 
@@ -100,14 +100,15 @@ Polaxis addresses the [OWASP Agentic AI Top Threats (ASI 2026)](https://owasp.or
 
 | Threat | Polaxis Layer | Coverage |
 |--------|--------------|----------|
-| T1 — Memory Poisoning | L4 + L6 | ✅ RAG/vector injection, latent triggers |
-| T2 — Tool / Resource Abuse | L7 Policy Engine | ✅ Per-tool rules, rate limits |
-| T3 — Privilege Escalation | L5 + L7 | ✅ Authority claims, sudo detection |
-| T4 — Data Exfiltration | L2 (PII) + L3 (secrets) | ✅ Credential & PII blocking |
-| T5 — Prompt Injection | L1 + L6 | ✅ 35+ patterns + semantic eval |
-| T6 — Cascading Failures | L7 Budget + HITL | ✅ Spend caps, approval gates |
-| T7 — Deceptive Alignment | L6 Semantic | ✅ LLM-based intent analysis |
-| T8 — Human Manipulation | L5 + L6 | ✅ Authority impersonation, urgency attacks |
+| T1 — Memory Poisoning | L4 + L6 | ✅ RAG/vector inject · MINJA · EchoLeak · latent triggers |
+| T2 — Tool / Resource Abuse | L7 Policy Engine | ✅ Per-tool rules · path traversal · SSRF · SQL injection |
+| T3 — Privilege Escalation | L5 + L7 | ✅ Authority claims · sudo · JWT/IAM/OIDC spoofing |
+| T4 — Data Exfiltration | L2 (PII) + L3 (secrets) | ✅ Credentials · PII · indirect DOB · synthetic labels |
+| T5 — Prompt Injection | L1 + L6 | ✅ 35+ patterns · NATO phonetic · Unicode · multilingual |
+| T6 — Cascading Failures | L7 Budget + HITL | ✅ Spend caps · session call limit (2000/session) |
+| T7 — Deceptive Alignment | L6 Semantic | ✅ Intent drift · confused deputy · role violation |
+| T10 — Policy Puppetry | L1 + L6 | ✅ XML/INI/JSON/YAML config override detection |
+| T15 — Human Manipulation | L5 + L6 | ✅ Authority impersonation · urgency · SOP/ticket bypass |
 
 ---
 
@@ -182,25 +183,36 @@ Main async client. Create **one instance per agent** and reuse it.
 
 ---
 
-### `await guard.evaluate(tool_name, tool_input, *, session_id, estimated_cost_usd)`
+### `await guard.evaluate(tool_name, tool_input, *, session_id, estimated_cost_usd, declared_intent, spawned_by_agent_id)`
 
 Evaluate a proposed tool call. **Call this before every tool execution.**
 
 ```python
 result = await guard.evaluate(
-    tool_name          = "send_email",
-    tool_input         = {"to_user_id": "usr_alice", "subject": "Hello"},
-    session_id         = "sess_abc",       # optional — groups calls in audit logs
-    estimated_cost_usd = 0.002,            # optional — for budget tracking
+    tool_name            = "send_email",
+    tool_input           = {"to_user_id": "usr_alice", "subject": "Hello"},
+    session_id           = "sess_abc",       # optional — groups calls in audit logs
+    estimated_cost_usd   = 0.002,            # optional — for budget tracking
+    declared_intent      = "send weekly digest to premium users",  # first call only
+    spawned_by_agent_id  = "agent_parent_id",  # sub-agents only — verifies chain
 )
 ```
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `tool_name` | `str` | required | Tool being invoked |
+| `tool_input` | `dict` | required | Tool arguments |
+| `session_id` | `str` | `""` | Groups calls in audit logs and per-session budgets |
+| `estimated_cost_usd` | `float` | `0.0` | Your cost estimate for this call |
+| `declared_intent` | `str \| None` | `None` | Session goal — set on first call for intent-drift detection |
+| `spawned_by_agent_id` | `str \| None` | `None` | Parent agent ID — verifies agent identity chain (T9/T12) |
 
 Returns [`EvaluateResult`](#evaluateresult).
 
 **Raises:**
 - `PolicyBlockError` — blocked by a policy rule
-- `FirewallBlockError` — blocked by the Agent Firewall (prompt injection, PII, secrets, memory poisoning, authority claim)
-- `BudgetExceededError` — agent's budget is exhausted
+- `FirewallBlockError` — blocked by the Agent Firewall (prompt injection, PII, secrets, memory poisoning, authority claim, policy puppetry, tool parameter attack)
+- `BudgetExceededError` — agent's budget is exhausted or session call limit reached
 - `AuthenticationError` — bad API key
 - `APIError` — unexpected HTTP error
 

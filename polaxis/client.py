@@ -96,6 +96,8 @@ class Polaxis:
         *,
         session_id: str = "",
         estimated_cost_usd: float = 0.0,
+        declared_intent: Optional[str] = None,
+        spawned_by_agent_id: Optional[str] = None,
     ) -> EvaluateResult:
         """Evaluate a tool call against your configured policies.
 
@@ -111,6 +113,13 @@ class Polaxis:
             estimated_cost_usd: Your own cost estimate for this call (e.g.
                 cloud API spend).  Polaxis may compute its own estimate; the
                 higher of the two is used for budget tracking.
+            declared_intent: Human-readable description of what the agent is
+                trying to accomplish in this session (e.g. ``"generate a
+                monthly sales report"``).  Set on the first call of a new
+                session to enable intent-drift detection.  Max 500 chars.
+            spawned_by_agent_id: For sub-agents — the ID of the parent agent
+                that spawned this call.  Polaxis verifies this matches the
+                agent's declared parent to detect impersonation (T9/T12).
 
         Returns:
             :class:`EvaluateResult` describing the governance decision.
@@ -125,12 +134,16 @@ class Polaxis:
             AuthenticationError: If the API key is rejected.
             APIError: On unexpected HTTP errors.
         """
-        payload = {
+        payload: dict = {
             "tool_name": tool_name,
             "tool_input": tool_input,
             "session_id": session_id,
             "estimated_cost_usd": estimated_cost_usd,
         }
+        if declared_intent is not None:
+            payload["declared_intent"] = declared_intent[:500]
+        if spawned_by_agent_id is not None:
+            payload["spawned_by_agent_id"] = spawned_by_agent_id
 
         async with httpx.AsyncClient(timeout=self._timeout) as client:
             resp = await client.post(
