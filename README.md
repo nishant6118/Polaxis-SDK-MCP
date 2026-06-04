@@ -6,7 +6,7 @@
 
 <h2>Polaxis Python SDK & MCP Server</h2>
 
-<p><i>AI agent security at the execution layer — evaluate every tool call, enforce policy, block threats. Sub-millisecond regex + LLM semantic eval. All before the tool runs.</i></p>
+<p><i>The runtime control layer between your AI agents and the real world — intercept every tool call, enforce policies, require human approval, audit everything. Before anything executes.</i></p>
 
 <br/>
 
@@ -17,36 +17,38 @@
 
 <br/>
 
-[![Docs](https://img.shields.io/badge/📚_docs.polaxis.io-blue?style=flat-square)](https://docs.polaxis.io)
-[![Dashboard](https://img.shields.io/badge/🌐_polaxis.io-live-6366f1?style=flat-square)](https://polaxis.io)
-[![Free Tier](https://img.shields.io/badge/✅_free_tier-1_agent_·_10k_calls%2Fmo-22c55e?style=flat-square)](https://polaxis.io/register)
-[![Benchmark](https://img.shields.io/badge/📊_benchmark-100%25_injection_·_100%25_secrets-22c55e?style=flat-square)](https://polaxis.io/benchmark)
+[![Docs](https://img.shields.io/badge/docs.polaxis.io-blue?style=flat-square)](https://docs.polaxis.io)
+[![Dashboard](https://img.shields.io/badge/polaxis.io-live-6366f1?style=flat-square)](https://polaxis.io)
+[![Free Tier](https://img.shields.io/badge/free_tier-1_agent_·_10k_calls%2Fmo-22c55e?style=flat-square)](https://polaxis.io/register)
+[![Benchmark](https://img.shields.io/badge/benchmark-99.4%25_detection-22c55e?style=flat-square)](https://polaxis.io/benchmark)
 
 </div>
 
 ---
 
-## What does Polaxis do?
+## What is Polaxis?
 
-Polaxis is the **AI agent security** and **LLM security** SDK for Python — it sits between your AI agent and its tools, evaluating every tool call against your policies in real time before it executes.
+Polaxis is the **runtime control layer** between your AI agents and the tools they call.
+
+You put an API gateway in front of your backend. Polaxis is that gateway for your agents — every tool call intercepted before it executes, evaluated against your policies, and either allowed, blocked, or routed for human approval.
 
 ```
   Your AI agent
         │
-        │  tool_call("delete_records", {"table": "users"})
+        │  tool_call("delete_records", {"table": "users_prod"})
         ▼
 ┌──────────────────────────────────────────────────────────────┐
-│                   Polaxis Runtime Firewall                    │
+│                   Polaxis Control Layer                       │
 │                                                              │
-│  L1  Prompt injection scan     — 35+ regex patterns         │
-│  L2  PII detection             — SSN, CC, phone, email…     │
-│  L3  Secret / credential scan  — 25+ vendor key formats     │
-│  L4  Memory poisoning defense  — RAG / vector store attacks │
-│  L5  Authority claim blocking  — admin impersonation, sudo  │
-│  L6  Semantic LLM eval         — catches encoding & evasion │
-│  L7  Policy engine             — your rules + budget caps   │
+│  L1  Regex scan            — 80+ patterns: injection, PII   │
+│  L2  Risk scorer           — 15 signals, sub-millisecond    │
+│  L3  LLM semantic gate     — fires on ~11% of calls only    │
+│  L4  Behavioral baseline   — detects slow drift attacks     │
+│  L5  Session graph         — recon → exfil kill-chain       │
+│  L6  Threat intel          — per-agent threat level 0–4     │
+│  L7  Policy engine         — your rules, budgets, logic     │
 │                                                              │
-│  Decision returned in < 5ms (regex) or ~400ms (+ LLM)       │
+│  0.15ms p50 (regex layers) · $0.00026 per call              │
 └──────────────────┬─────────────────────┬────────────────────┘
                    │                     │
                 ALLOW              BLOCK / ESCALATE
@@ -59,472 +61,211 @@ Polaxis is the **AI agent security** and **LLM security** SDK for Python — it 
 
 | Decision | Meaning | What to do |
 |----------|---------|------------|
-| `allow` | Within policy. Proceed. | Execute the tool |
-| `block` | Violates a rule or budget cap. | Abort — log the reason |
-| `escalate` | Human sign-off required. | Wait for approval via Slack or dashboard |
+| `approved` | Within policy. Proceed. | Execute the tool |
+| `blocked` | Violates a rule or budget cap. | Abort — reason logged |
+| `escalated` | Human sign-off required. | Wait for approval via Slack or dashboard |
 
 ---
 
-## Detection Accuracy
-
-> Measured on **459 real-world adversarial payloads** — not sanitised demos.
-> Hard tier includes Base64, ROT13, Unicode homoglyphs, zero-width chars, NATO phonetic steganography, 10+ languages, social engineering, MINJA memory poisoning, EchoLeak indirect injection.
-
-| Threat Category | Detection Rate |
-|---|:---:|
-| 💉 Prompt Injection | **100.0%** |
-| 🔑 Credential / Secret | **100.0%** |
-| 🪪 PII Detection | **97.8%** |
-| 🧠 Memory Poisoning | **98.9%** |
-| 👑 Authority Claims | **100.0%** |
-| ✅ Regex false positive rate | **0.0%** |
-
-**99.3% average detection across all 5 threat categories.**
-
-The 7-layer stack runs regex first (sub-millisecond, free), then LLM semantic eval only when needed — so you get near-zero latency for clean calls and deep analysis for suspicious ones.
-
-### Performance
-
-| Layer | p50 latency | Cost |
-|-------|-------------|------|
-| Regex (L1–L5) | **0.258 ms** | Free |
-| + LLM eval (L6) | ~3.3 s | ~$0.00044/call |
-
-> [Full benchmark methodology →](https://polaxis.io/benchmark)
-
----
-
-## OWASP Agentic AI Coverage
-
-Polaxis addresses the [OWASP Agentic AI Top Threats (ASI 2026)](https://owasp.org/www-project-top-10-for-large-language-model-applications/):
-
-| Threat | Polaxis Layer | Coverage |
-|--------|--------------|----------|
-| T1 — Memory Poisoning | L4 + L6 | ✅ RAG/vector inject · MINJA · EchoLeak · latent triggers |
-| T2 — Tool / Resource Abuse | L7 Policy Engine | ✅ Per-tool rules · path traversal · SSRF · SQL injection |
-| T3 — Privilege Escalation | L5 + L7 | ✅ Authority claims · sudo · JWT/IAM/OIDC spoofing |
-| T4 — Data Exfiltration | L2 (PII) + L3 (secrets) | ✅ Credentials · PII · indirect DOB · synthetic labels |
-| T5 — Prompt Injection | L1 + L6 | ✅ 35+ patterns · NATO phonetic · Unicode · multilingual |
-| T6 — Cascading Failures | L7 Budget + HITL | ✅ Spend caps · session call limit (2000/session) |
-| T7 — Deceptive Alignment | L6 Semantic | ✅ Intent drift · confused deputy · role violation |
-| T10 — Policy Puppetry | L1 + L6 | ✅ XML/INI/JSON/YAML config override detection |
-| T15 — Human Manipulation | L5 + L6 | ✅ Authority impersonation · urgency · SOP/ticket bypass |
-
----
-
-## Installation
+## Quickstart — 3 lines
 
 ```bash
 pip install polaxis
 ```
 
-With MCP server support:
+```python
+from polaxis import Polaxis
 
-```bash
-pip install "polaxis[mcp]"
+guard = Polaxis(api_key="ag_prod_...", agent_id="my-agent")
+
+# Wrap any tool call — works with any framework
+result = await guard.evaluate(
+    tool_name="delete_records",
+    tool_input={"table": "users_prod"}
+)
+# result.decision → "approved" | "blocked" | "escalated"
+# result.reason   → "rule: no-prod-delete · 0.15ms"
 ```
 
-**Requirements:** Python 3.10+
+That's it. Works with LangChain, LangGraph, CrewAI, OpenAI Agents SDK, PydanticAI, AutoGen, or any custom agent — anything that calls a tool.
 
 ---
 
-## Quick start
+## MCP Proxy — zero code
 
-**1.** Create a free account at [polaxis.io/register →](https://polaxis.io/register), add an agent, and copy its API key.
-
-**2.** Set your key:
+For Claude Desktop, Cursor, or any MCP client: set three env vars and point your client at the proxy. No code changes.
 
 ```bash
 export POLAXIS_API_KEY=ag_prod_...
+export POLAXIS_AGENT_ID=claude-desktop
+export TARGET_MCP_SERVER_URL=http://localhost:8080
+
+# Start the proxy
+python -m polaxis.mcp_proxy
 ```
 
-**3.** Evaluate every tool call before executing it:
+Every MCP tool call now goes through Polaxis before it reaches your server.
+
+---
+
+## What it protects against
+
+| Threat | What it catches |
+|--------|-----------------|
+| **Prompt injection** | Direct, indirect (RAG/email), encoded (Base64, Unicode, NATO phonetic), multilingual |
+| **Credential leakage** | 25+ vendor key formats + high-entropy detection |
+| **PII exfiltration** | SSN, passport, credit card, phone, email — 10+ languages |
+| **Memory poisoning** | MINJA-style latent trigger attacks on vector stores |
+| **Authority claims** | Admin impersonation, sudo escalation, fake system overrides |
+| **Policy Puppetry** | XML/INI/JSON structured prompts claiming to disable security |
+| **Economic DoS** | Token amplification attacks — hard session cap enforced |
+
+---
+
+## Detection accuracy
+
+> Measured on **459 real-world adversarial payloads** — hard tier includes Base64, ROT13, Unicode homoglyphs, zero-width chars, 10+ languages, MINJA memory poisoning, EchoLeak indirect injection.
+
+| Threat Category | Detection Rate |
+|---|:---:|
+| Prompt Injection | **99.0%** |
+| Credential / Secret | **100.0%** |
+| PII Detection | **97.8%** |
+| Memory Poisoning | **96.7%** |
+| Authority Claims | **100.0%** |
+| LLM false positive rate | **4.0%** |
+| Regex false positive rate | **0.0%** |
+
+**99.4% average detection across all threat categories.**
+
+→ [Full benchmark methodology](https://polaxis.io/benchmark)
+
+---
+
+## Performance
+
+| Layer | p50 latency | Notes |
+|-------|-------------|-------|
+| Regex + risk scorer | **0.15ms** | Pure Python, no I/O |
+| Full 7-layer (no LLM) | **~0.5ms** | 89% of calls |
+| With LLM semantic gate | **80–200ms** | ~11% of calls |
+| Cost per call | **$0.00026** | LLM layer only when needed |
+
+---
+
+## Framework examples
+
+<details>
+<summary><b>LangChain</b></summary>
 
 ```python
-import asyncio
-from polaxis import Polaxis, PolicyBlockError
+from langchain.tools import tool
+from polaxis import Polaxis
 
-guard = Polaxis()   # reads POLAXIS_API_KEY from env
+guard = Polaxis(api_key="ag_prod_...", agent_id="langchain-agent")
 
-async def send_invoice(customer_id: str, amount: float):
-
-    # ← Evaluate BEFORE touching any tool
+@tool
+async def delete_records(table: str) -> str:
+    """Delete records from a table."""
     result = await guard.evaluate(
-        tool_name  = "send_invoice",
-        tool_input = {"customer_id": customer_id, "amount_usd": amount},
-        session_id = "session-001",
+        tool_name="delete_records",
+        tool_input={"table": table}
     )
-
-    if result.allowed:
-        your_invoice_api.send(customer_id, amount)
-
-asyncio.run(send_invoice("cust_123", 499.00))
+    if result.decision == "blocked":
+        return f"Blocked: {result.reason}"
+    # proceed with deletion
+    return f"Deleted records from {table}"
 ```
+</details>
 
-Every call is now governed, logged, and auditable from your Polaxis dashboard.
-
-> **Why this matters for LLM security:** prompts are only half the problem. The real risk is what your agent *does* — the tools it calls, the data it touches, the money it moves. **Agent runtime security** lives at execution time, not the prompt layer. Regex catches obvious attacks in microseconds. The LLM layer catches the sophisticated ones — multi-language injections, encoded payloads, social engineering — that no regex can see.
-
----
-
-## API Reference
-
-### `Polaxis(api_key, *, base_url, timeout, raise_on_block, raise_on_budget)`
-
-Main async client. Create **one instance per agent** and reuse it.
-
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| `api_key` | `str` | `env POLAXIS_API_KEY` | Your agent API key (`ag_...`) |
-| `base_url` | `str` | `https://api.polaxis.io` | Override for self-hosted deployments |
-| `timeout` | `float` | `10.0` | HTTP request timeout in seconds |
-| `raise_on_block` | `bool` | `True` | Raise `PolicyBlockError` / `FirewallBlockError` instead of returning a blocked result |
-| `raise_on_budget` | `bool` | `True` | Raise `BudgetExceededError` on budget violations |
-
----
-
-### `await guard.evaluate(tool_name, tool_input, *, session_id, estimated_cost_usd, declared_intent, spawned_by_agent_id)`
-
-Evaluate a proposed tool call. **Call this before every tool execution.**
+<details>
+<summary><b>OpenAI Agents SDK</b></summary>
 
 ```python
-result = await guard.evaluate(
-    tool_name            = "send_email",
-    tool_input           = {"to_user_id": "usr_alice", "subject": "Hello"},
-    session_id           = "sess_abc",       # optional — groups calls in audit logs
-    estimated_cost_usd   = 0.002,            # optional — for budget tracking
-    declared_intent      = "send weekly digest to premium users",  # first call only
-    spawned_by_agent_id  = "agent_parent_id",  # sub-agents only — verifies chain
-)
-```
+from agents import Agent, function_tool
+from polaxis import Polaxis
 
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| `tool_name` | `str` | required | Tool being invoked |
-| `tool_input` | `dict` | required | Tool arguments |
-| `session_id` | `str` | `""` | Groups calls in audit logs and per-session budgets |
-| `estimated_cost_usd` | `float` | `0.0` | Your cost estimate for this call |
-| `declared_intent` | `str \| None` | `None` | Session goal — set on first call for intent-drift detection |
-| `spawned_by_agent_id` | `str \| None` | `None` | Parent agent ID — verifies agent identity chain (T9/T12) |
+guard = Polaxis(api_key="ag_prod_...", agent_id="openai-agent")
 
-Returns [`EvaluateResult`](#evaluateresult).
-
-**Raises:**
-- `PolicyBlockError` — blocked by a policy rule
-- `FirewallBlockError` — blocked by the Agent Firewall (prompt injection, PII, secrets, memory poisoning, authority claim, policy puppetry, tool parameter attack)
-- `BudgetExceededError` — agent's budget is exhausted or session call limit reached
-- `AuthenticationError` — bad API key
-- `APIError` — unexpected HTTP error
-
----
-
-### `await guard.await_approval(approval_id, *, timeout_seconds, poll_interval)`
-
-Poll until a human approver acts on an escalated request.
-
-```python
-result = await guard.evaluate("wire_transfer", {"amount": 50_000})
-
-if result.pending_approval:
-    status = await guard.await_approval(
-        result.approval_id,
-        timeout_seconds = result.timeout_seconds,
+@function_tool
+async def send_email(to: str, body: str) -> str:
+    result = await guard.evaluate(
+        tool_name="send_email",
+        tool_input={"to": to, "body": body}
     )
-    if status.approved:
-        execute_transfer()
-    # raises ApprovalRejectedError or ApprovalTimeoutError otherwise
+    if result.decision != "approved":
+        return f"Action {result.decision}: {result.reason}"
+    # send email
 ```
+</details>
+
+<details>
+<summary><b>CrewAI</b></summary>
+
+```python
+from crewai_tools import BaseTool
+from polaxis import Polaxis
+
+guard = Polaxis(api_key="ag_prod_...", agent_id="crewai-agent")
+
+class SafeDatabaseTool(BaseTool):
+    async def _run(self, query: str) -> str:
+        result = await guard.evaluate(
+            tool_name="run_query",
+            tool_input={"query": query}
+        )
+        if result.decision == "blocked":
+            return f"Blocked by Polaxis: {result.reason}"
+        # execute query
+```
+</details>
 
 ---
 
-### `EvaluateResult`
+## Policy rules
 
-| Attribute | Type | Description |
-|-----------|------|-------------|
-| `decision` | `str` | `"allow"` \| `"block"` \| `"escalate"` |
-| `allowed` | `bool` | Shorthand for `decision == "allow"` |
-| `blocked` | `bool` | Shorthand for `decision == "block"` |
-| `pending_approval` | `bool` | Shorthand for `decision == "escalate"` |
-| `reason` | `str \| None` | Human-readable explanation |
-| `policy_triggered` | `str \| None` | Policy name that matched |
-| `rule_name` | `str \| None` | Specific rule that matched |
-| `approval_id` | `str \| None` | For escalated calls — pass to `await_approval()` |
-| `timeout_seconds` | `int` | How long to wait for approval |
-| `budget_remaining_usd` | `float` | Remaining daily budget |
-| `budget_warning` | `bool` | Budget is below 20% |
-| `threats` | `list` | Detected firewall threats (non-blocking when action is `flag`) |
-
----
-
-### `PolaxisSync` — synchronous usage
-
-For scripts and non-async frameworks:
-
-```python
-from polaxis import PolaxisSync
-
-guard  = PolaxisSync()
-result = guard.evaluate("delete_records", {"table": "orders", "where": "status='test'"})
-
-if result.blocked:
-    raise RuntimeError(f"Blocked: {result.reason}")
-```
-
----
-
-## Error Handling
-
-All exceptions inherit from `PolaxisError`:
-
-```python
-from polaxis import (
-    PolicyBlockError,       # policy rule matched → block
-    FirewallBlockError,     # firewall detected threat (injection / PII / secret)
-    BudgetExceededError,    # daily or monthly budget hit
-    ApprovalRejectedError,  # human clicked Reject
-    ApprovalTimeoutError,   # no decision within timeout window
-    AuthenticationError,    # bad API key
-    APIError,               # unexpected HTTP error
-)
-```
-
-**Pattern — handle without raising:**
-
-```python
-guard  = Polaxis(raise_on_block=False, raise_on_budget=False)
-result = await guard.evaluate("tool", input_dict)
-
-match result.decision:
-    case "allow":
-        run_tool()
-    case "block":
-        log.warning("Blocked: %s", result.reason)
-    case "escalate":
-        status = await guard.await_approval(result.approval_id)
-```
-
----
-
-## Human-in-the-Loop (HITL)
-
-When a policy rule has `action: require_approval`, Polaxis pauses the agent and sends a request to your configured Slack channel or dashboard.
-
-```python
-result = await guard.evaluate(
-    "deploy_to_production",
-    {"service": "api", "version": "v2.1.0"},
-)
-
-if result.pending_approval:
-    print(f"⏳ Waiting for approval (id: {result.approval_id})")
-    # Blocks (async) until approved, rejected, or timed out
-    status = await guard.await_approval(
-        result.approval_id,
-        timeout_seconds = 600,   # 10-minute window
-    )
-    if status.approved:
-        deploy()
-    # ApprovalRejectedError or ApprovalTimeoutError raised otherwise
-```
-
-Your team sees this in Slack:
-
-```
-🔔  Polaxis — Approval Required
-─────────────────────────────────────
-Agent:   deploy-bot
-Policy:  prod-deploy-policy
-Tool:    deploy_to_production
-Input:   {"service": "api", "version": "v2.1.0"}
-─────────────────────────────────────
-[  ✓ Approve  ]   [  ✗ Reject  ]
-```
-
----
-
-## Framework Integrations
-
-### OpenAI function calling
-
-```python
-# See examples/openai_tools_example.py for the full pattern
-async def execute_tool(tool_name: str, tool_input: dict) -> str:
-    result = await guard.evaluate(tool_name, tool_input)
-    if result.allowed:
-        return your_tool_implementations[tool_name](**tool_input)
-    return f"Blocked: {result.reason}"
-```
-
-### LangGraph
-
-```python
-from polaxis.adapters.langgraph import PolaxisCallback
-
-guard = Polaxis()
-graph = builder.compile(callbacks=[PolaxisCallback(guard)])
-result = await graph.ainvoke({"messages": [HumanMessage(content="Process refunds")]})
-```
-
-### LangChain
-
-```python
-# See examples/langchain_example.py for a GovernedTool base class
-class MyTool(GovernedTool):
-    name = "my_tool"
-
-    async def _run_governed(self, **kwargs):
-        # Only called when Polaxis says "allow"
-        return do_the_work(**kwargs)
-```
-
-### MCP (Model Context Protocol)
-
-Add the Polaxis governance proxy to your MCP client config:
+Define policies in the dashboard or via JSON:
 
 ```json
-{
-  "mcpServers": {
-    "polaxis": {
-      "command": "polaxis-mcp",
-      "env": {
-        "POLAXIS_API_KEY": "ag_prod_..."
-      }
-    }
+[
+  {
+    "rule": "no-prod-delete",
+    "tool": "delete_records",
+    "condition": "table LIKE '%prod%'",
+    "action": "block"
+  },
+  {
+    "rule": "large-charge-approval",
+    "tool": "charge_card",
+    "condition": "amount > 500",
+    "action": "escalate",
+    "notify": "#finance-alerts"
+  },
+  {
+    "rule": "daily-budget",
+    "agent": "*",
+    "budget_usd": 50,
+    "period": "day",
+    "action": "block"
   }
-}
-```
-
-The server exposes a `polaxis_evaluate` tool your agent calls before any action. See `examples/mcp_config.json` for a full config example.
-
-### CrewAI / PydanticAI / AutoGen
-
-The pattern is the same for any framework — evaluate before calling the tool, handle the three outcomes. See the `examples/` directory.
-
----
-
-## Policy Examples
-
-Policies are configured in the [Polaxis dashboard](https://polaxis.io/dashboard). Common patterns:
-
-**Block large financial transactions:**
-
-```json
-{
-  "name": "finance-guard",
-  "rules": [
-    {
-      "trigger": { "tool": "charge_card", "condition": "amount_usd > 500" },
-      "action": "block",
-      "message": "Charges over $500 require manual processing."
-    }
-  ]
-}
-```
-
-**Require approval for production deployments:**
-
-```json
-{
-  "name": "prod-deploy",
-  "rules": [
-    {
-      "trigger": { "tool": "deploy", "condition": "environment == 'production'" },
-      "action": "require_approval",
-      "message": "Production deploys require engineering lead sign-off."
-    }
-  ]
-}
-```
-
-**Rate-limit an external API tool:**
-
-```json
-{
-  "name": "api-rate-limit",
-  "rules": [
-    {
-      "trigger": { "tool": "call_external_api", "condition": "rate_per_hour > 100" },
-      "action": "block",
-      "message": "External API rate limit exceeded."
-    }
-  ]
-}
+]
 ```
 
 ---
 
-## Examples
+## Links
 
-| File | What it shows |
-|------|---------------|
-| `examples/basic_usage.py` | Core `evaluate` + HITL pattern |
-| `examples/openai_tools_example.py` | OpenAI function-calling agent loop |
-| `examples/langchain_example.py` | LangChain `GovernedTool` base class |
-| `examples/mcp_config.json` | MCP client config for the proxy server |
-
----
-
-## Self-Hosted Deployment
-
-On Pro and Enterprise plans you can run the full Polaxis stack in your own infrastructure:
-
-```bash
-git clone https://github.com/nishant6118/comply.git
-```
-
-Point the SDK at your instance:
-
-```python
-guard = Polaxis(
-    api_key  = "ag_prod_...",
-    base_url = "https://polaxis.your-company.com",
-)
-```
-
-Contact [sales@polaxis.io](mailto:sales@polaxis.io) for a Docker Compose deployment guide and VPC setup instructions.
-
----
-
-## Contributing
-
-Contributions are welcome! See `CONTRIBUTING.md` for:
-- Development setup
-- How to add a new framework integration
-- Running tests
-- PR checklist and design principles
-
----
-
-## Support
-
-| Channel | Link |
-|---------|------|
-| Documentation | [docs.polaxis.io](https://docs.polaxis.io) |
-| Dashboard | [polaxis.io](https://polaxis.io) |
-| Benchmark | [polaxis.io/benchmark](https://polaxis.io/benchmark) |
-| GitHub Issues | [github.com/nishant6118/Polaxis-SDK-MCP/issues](https://github.com/nishant6118/Polaxis-SDK-MCP/issues) |
-| Email | [sdk@polaxis.io](mailto:sdk@polaxis.io) |
+| | |
+|---|---|
+| **Dashboard** | [polaxis.io](https://polaxis.io) |
+| **Docs** | [docs.polaxis.io](https://docs.polaxis.io) |
+| **Interactive demo** | [polaxis.io/demo](https://polaxis.io/demo) |
+| **Benchmark** | [polaxis.io/benchmark](https://polaxis.io/benchmark) |
+| **Free tier** | 1 agent · 10,000 calls/month · no card required |
+| **PyPI** | `pip install polaxis` |
 
 ---
 
 ## License
 
-MIT — see [LICENSE](LICENSE).
-
----
-
-<div align="center">
-
-**[🚀 Get started free](https://polaxis.io/register)** · **[📊 Benchmark](https://polaxis.io/benchmark)** · **[📚 Full docs](https://docs.polaxis.io)** · **[💬 sales@polaxis.io](mailto:sales@polaxis.io)**
-
-<br/>
-
-[![ai-agent-security](https://img.shields.io/badge/-ai--agent--security-dc2626?style=flat-square)](https://github.com/topics/ai-agent-security)
-[![llm-security](https://img.shields.io/badge/-llm--security-dc2626?style=flat-square)](https://github.com/topics/llm-security)
-[![prompt-injection](https://img.shields.io/badge/-prompt--injection-b45309?style=flat-square)](https://github.com/topics/prompt-injection)
-[![agent-firewall](https://img.shields.io/badge/-agent--firewall-7c3aed?style=flat-square)](https://github.com/topics/agent-firewall)
-[![mcp](https://img.shields.io/badge/-mcp-7c3aed?style=flat-square)](https://github.com/topics/mcp)
-[![owasp](https://img.shields.io/badge/-owasp--agentic--ai-dc2626?style=flat-square)](https://github.com/topics/owasp)
-[![python](https://img.shields.io/badge/-python-3776ab?style=flat-square&logo=python&logoColor=white)](https://github.com/topics/python)
-
-</div>
+MIT — free to use, modify, and distribute.
